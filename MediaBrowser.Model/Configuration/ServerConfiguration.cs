@@ -274,6 +274,16 @@ public class ServerConfiguration : BaseApplicationConfiguration
     public int ParallelImageEncodingLimit { get; set; }
 
     /// <summary>
+    /// Gets or sets the image encoder to use.
+    /// </summary>
+    /// <remarks>
+    /// Changing this requires a server restart. If the selected encoder's native library is missing the
+    /// server falls back to another available encoder rather than refusing to start.
+    /// </remarks>
+    /// <value>The image encoder.</value>
+    public ImageEncoderType ImageEncoder { get; set; } = ImageEncoderType.Skia;
+
+    /// <summary>
     /// Gets or sets the list of cast receiver applications.
     /// </summary>
     public CastReceiverApplication[] CastReceiverApplications { get; set; } = Array.Empty<CastReceiverApplication>();

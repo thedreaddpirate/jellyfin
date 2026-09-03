@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using Emby.Server.Implementations;
 using Emby.Server.Implementations.Session;
 using Jellyfin.Api.WebSocketListeners;
 using Jellyfin.Database.Implementations;
 using Jellyfin.Drawing;
+using Jellyfin.Drawing.NetVips;
 using Jellyfin.Drawing.Skia;
 using Jellyfin.LiveTv;
 using Jellyfin.Server.Implementations.Activity;
@@ -27,6 +29,7 @@ using MediaBrowser.Controller.Net;
 using MediaBrowser.Controller.Security;
 using MediaBrowser.Controller.Trickplay;
 using MediaBrowser.Model.Activity;
+using MediaBrowser.Model.Configuration;
 using MediaBrowser.Providers.Lyric;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -63,17 +66,7 @@ namespace Jellyfin.Server
         protected override void RegisterServices(IServiceCollection serviceCollection)
         {
             // Register an image encoder
-            bool useSkiaEncoder = SkiaEncoder.IsNativeLibAvailable();
-            Type imageEncoderType = useSkiaEncoder
-                ? typeof(SkiaEncoder)
-                : typeof(NullImageEncoder);
-            serviceCollection.AddSingleton(typeof(IImageEncoder), imageEncoderType);
-
-            // Log a warning if the Skia encoder could not be used
-            if (!useSkiaEncoder)
-            {
-                Logger.LogWarning("Skia not available. Will fallback to {ImageEncoder}.", nameof(NullImageEncoder));
-            }
+            serviceCollection.AddSingleton(typeof(IImageEncoder), SelectImageEncoder());
 
             serviceCollection.AddEventServices();
             serviceCollection.AddSingleton<IBaseItemManager, BaseItemManager>();
@@ -109,6 +102,59 @@ namespace Jellyfin.Server
             }
 
             base.RegisterServices(serviceCollection);
+        }
+
+        /// <summary>
+        /// Picks the image encoder to register, honouring <see cref="ServerConfiguration.ImageEncoder"/>.
+        /// </summary>
+        /// <remarks>
+        /// A missing native library is not fatal: the server falls back to the next usable encoder and
+        /// logs why, so a bad configuration cannot leave it unable to start.
+        /// </remarks>
+        /// <returns>The <see cref="IImageEncoder"/> implementation to use.</returns>
+        private Type SelectImageEncoder()
+        {
+            if (ConfigurationManager.Configuration.ImageEncoder == ImageEncoderType.NetVips)
+            {
+                var netVipsEncoderType = TryGetNetVipsEncoder();
+                if (netVipsEncoderType is not null)
+                {
+                    return netVipsEncoderType;
+                }
+
+                Logger.LogWarning("libvips not available. Will fallback to {ImageEncoder}.", nameof(SkiaEncoder));
+            }
+
+            if (SkiaEncoder.IsNativeLibAvailable())
+            {
+                return typeof(SkiaEncoder);
+            }
+
+            Logger.LogWarning("Skia not available. Will fallback to {ImageEncoder}.", nameof(NullImageEncoder));
+            return typeof(NullImageEncoder);
+        }
+
+        /// <summary>
+        /// Resolves the NetVips encoder, or null when its native library is missing.
+        /// </summary>
+        /// <remarks>
+        /// Deliberately kept in its own uninlined method: the JIT loads an assembly when it compiles
+        /// the method that references it, not when the reference is reached, so folding this into
+        /// <see cref="SelectImageEncoder"/> would start libvips on every server including the ones
+        /// that stay on Skia.
+        /// </remarks>
+        /// <returns>The NetVips encoder type, or null.</returns>
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private Type? TryGetNetVipsEncoder()
+        {
+            if (!NetVipsEncoder.IsNativeLibAvailable())
+            {
+                return null;
+            }
+
+            Logger.LogInformation("Using the {ImageEncoder} image encoder.", nameof(NetVipsEncoder));
+
+            return typeof(NetVipsEncoder);
         }
 
         /// <inheritdoc />

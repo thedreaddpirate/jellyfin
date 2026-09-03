@@ -52,6 +52,16 @@
     <PackageVersion Include="Morestachio" Version="5.0.1.670" />
     <PackageVersion Include="Moq" Version="4.18.4" />
     <PackageVersion Include="NEbml" Version="1.1.0.5" />
+    <PackageVersion Include="NetVips" Version="3.2.0" />
+    <PackageVersion Include="NetVips.Native.linux-arm" Version="8.18.6" />
+    <PackageVersion Include="NetVips.Native.linux-arm64" Version="8.18.6" />
+    <PackageVersion Include="NetVips.Native.linux-musl-arm64" Version="8.18.6" />
+    <PackageVersion Include="NetVips.Native.linux-musl-x64" Version="8.18.6" />
+    <PackageVersion Include="NetVips.Native.linux-x64" Version="8.18.6" />
+    <PackageVersion Include="NetVips.Native.osx-arm64" Version="8.18.6" />
+    <PackageVersion Include="NetVips.Native.osx-x64" Version="8.18.6" />
+    <PackageVersion Include="NetVips.Native.win-arm64" Version="8.18.6" />
+    <PackageVersion Include="NetVips.Native.win-x64" Version="8.18.6" />
     <PackageVersion Include="Newtonsoft.Json" Version="13.0.4" />
     <PackageVersion Include="PDFtoImage" Version="5.2.1" />
     <PackageVersion Include="PlaylistsNET" Version="1.4.1" />
