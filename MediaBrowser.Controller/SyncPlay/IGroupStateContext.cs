@@ -34,10 +34,11 @@ namespace MediaBrowser.Controller.SyncPlay
         long MaxPlaybackOffset { get; }
 
         /// <summary>
-        /// Gets the maximum offset accepted for a session catching up after buffering, in milliseconds.
+        /// Gets the maximum offset, in milliseconds, that a session reporting active playback may be
+        /// behind the group while still being treated as catching up rather than out of position.
         /// </summary>
-        /// <value>The maximum catch-up offset, in milliseconds.</value>
-        long MaxCatchUpOffset => 60000;
+        /// <value>The maximum catch-up offset.</value>
+        long MaxCatchUpOffset { get; }
 
         /// <summary>
         /// Gets the group identifier.

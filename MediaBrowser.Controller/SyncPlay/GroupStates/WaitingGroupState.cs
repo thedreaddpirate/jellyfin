@@ -18,14 +18,6 @@ namespace MediaBrowser.Controller.SyncPlay.GroupStates
     public class WaitingGroupState : AbstractGroupState
     {
         /// <summary>
-        /// The maximum amount of time, in milliseconds, that a session which reports active playback
-        /// may be away from the group position and still be treated as catching up. A session further
-        /// out than this is not recovering, it is playing the wrong position, and is corrected the
-        /// same way a session that reports itself paused would be.
-        /// </summary>
-        private const long MaxCatchUpOffsetMs = 10000;
-
-        /// <summary>
         /// The logger.
         /// </summary>
         private readonly ILogger<WaitingGroupState> _logger;
@@ -59,7 +51,10 @@ namespace MediaBrowser.Controller.SyncPlay.GroupStates
         private GroupStateType InitialState { get; set; }
 
         /// <summary>
-        /// Gets or sets a value indicating whether the group position moved during this wait.
+        /// Gets or sets a value indicating whether the group position moved under the sessions
+        /// during this wait, which happens on a seek or when the playing item changes. It separates
+        /// a session that has not applied the new position yet from one that is merely catching up
+        /// after buffering, because only the former should be corrected on a tight tolerance.
         /// </summary>
         private bool PositionJumped { get; set; }
 
@@ -467,11 +462,12 @@ namespace MediaBrowser.Controller.SyncPlay.GroupStates
             {
                 // Handle case where session reported as ready but in reality
                 // it has no clue of the real position nor the playback state.
-                // A session that reports active playback is allowed to lag while it catches up,
-                // but only within a bounded window: past that it is on the wrong position entirely,
-                // which happens when it has not applied a seek the rest of the group already has.
-                var maxOffsetTicks = request.IsPlaying
-                    ? TimeSpan.FromMilliseconds(MaxCatchUpOffsetMs).Ticks
+                // A session that reports active playback while the group position has stayed put is
+                // recovering from buffering and is allowed to lag, within a bound. Once the group
+                // position has jumped, a session still reporting the old one has not applied the
+                // change and is corrected on the same tight tolerance as a paused session.
+                var maxOffsetTicks = request.IsPlaying && !PositionJumped
+                    ? TimeSpan.FromMilliseconds(context.MaxCatchUpOffset).Ticks
                     : maxPlaybackOffsetTicks;
 
                 if (Math.Abs(delayTicks) > maxOffsetTicks)
