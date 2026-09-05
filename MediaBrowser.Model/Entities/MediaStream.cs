@@ -816,11 +816,12 @@ namespace MediaBrowser.Model.Entities
             var blPresentFlag = BlPresentFlag == 1;
             var dvBlCompatId = DvBlSignalCompatibilityId;
 
+            var isSDRColorSpace = ColorSpace is "bt709";
             var isDoViProfile = dvProfile is 5 or 7 or 8 or 10;
             var isDoViELProfile = dvProfile is 7 or 8 or 10;
             var isDoViFlag = rpuPresentFlag && blPresentFlag && dvBlCompatId is 0 or 1 or 4 or 2 or 6;
 
-            if ((isDoViProfile && isDoViFlag)
+            if ((isDoViProfile && isDoViFlag && !isSDRColorSpace)
                 || string.Equals(codecTag, "dovi", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(codecTag, "dvh1", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(codecTag, "dvhe", StringComparison.OrdinalIgnoreCase)
@@ -850,6 +851,11 @@ namespace MediaBrowser.Model.Entities
                     _ => (VideoRange.SDR, VideoRangeType.SDR)
                 };
 
+                if (!isSDRColorSpace && isDoViELProfile)
+                {
+                    return (VideoRange.SDR, VideoRangeType.DOVIInvalid);
+                }
+
                 if (Hdr10PlusPresentFlag == true)
                 {
                     return dvRangeSet.Item2 switch
@@ -864,7 +870,6 @@ namespace MediaBrowser.Model.Entities
             }
 
             var colorTransfer = ColorTransfer;
-            var colorSpace = ColorSpace;
 
             if (string.Equals(colorTransfer, "smpte2084", StringComparison.OrdinalIgnoreCase))
             {
@@ -873,10 +878,6 @@ namespace MediaBrowser.Model.Entities
             else if (string.Equals(colorTransfer, "arib-std-b67", StringComparison.OrdinalIgnoreCase))
             {
                 return (VideoRange.HDR, VideoRangeType.HLG);
-            }
-            else if (string.Equals(colorSpace, "bt709", StringComparison.OrdinalIgnoreCase) && isDoViELProfile)
-            {
-                return (VideoRange.SDR, VideoRangeType.DOVIInvalid);
             }
 
             return (VideoRange.SDR, VideoRangeType.SDR);
