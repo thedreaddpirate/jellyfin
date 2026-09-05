@@ -817,6 +817,7 @@ namespace MediaBrowser.Model.Entities
             var dvBlCompatId = DvBlSignalCompatibilityId;
 
             var isDoViProfile = dvProfile is 5 or 7 or 8 or 10;
+            var isDoViELProfile = dvProfile is 7 or 8 or 10;
             var isDoViFlag = rpuPresentFlag && blPresentFlag && dvBlCompatId is 0 or 1 or 4 or 2 or 6;
 
             if ((isDoViProfile && isDoViFlag)
@@ -863,6 +864,7 @@ namespace MediaBrowser.Model.Entities
             }
 
             var colorTransfer = ColorTransfer;
+            var colorSpace = ColorSpace;
 
             if (string.Equals(colorTransfer, "smpte2084", StringComparison.OrdinalIgnoreCase))
             {
@@ -871,6 +873,10 @@ namespace MediaBrowser.Model.Entities
             else if (string.Equals(colorTransfer, "arib-std-b67", StringComparison.OrdinalIgnoreCase))
             {
                 return (VideoRange.HDR, VideoRangeType.HLG);
+            }
+            else if (string.Equals(colorSpace, "bt709", StringComparison.OrdinalIgnoreCase) && isDoViELProfile)
+            {
+                return (VideoRange.SDR, VideoRangeType.DOVIInvalid);
             }
 
             return (VideoRange.SDR, VideoRangeType.SDR);
