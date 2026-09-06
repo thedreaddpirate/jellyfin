@@ -51,10 +51,7 @@ namespace MediaBrowser.Controller.SyncPlay.GroupStates
         private GroupStateType InitialState { get; set; }
 
         /// <summary>
-        /// Gets or sets a value indicating whether the group position moved under the sessions
-        /// during this wait, which happens on a seek or when the playing item changes. It separates
-        /// a session that has not applied the new position yet from one that is merely catching up
-        /// after buffering, because only the former should be corrected on a tight tolerance.
+        /// Gets or sets a value indicating whether the group position moved during this wait.
         /// </summary>
         private bool PositionJumped { get; set; }
 
@@ -462,10 +459,8 @@ namespace MediaBrowser.Controller.SyncPlay.GroupStates
             {
                 // Handle case where session reported as ready but in reality
                 // it has no clue of the real position nor the playback state.
-                // A session that reports active playback while the group position has stayed put is
-                // recovering from buffering and is allowed to lag, within a bound. Once the group
-                // position has jumped, a session still reporting the old one has not applied the
-                // change and is corrected on the same tight tolerance as a paused session.
+                // A jump means the session has not applied the new position; without one it is
+                // catching up after buffering and is allowed to lag.
                 var maxOffsetTicks = request.IsPlaying && !PositionJumped
                     ? TimeSpan.FromMilliseconds(context.MaxCatchUpOffset).Ticks
                     : maxPlaybackOffsetTicks;
