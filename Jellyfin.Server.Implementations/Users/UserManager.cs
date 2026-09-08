@@ -853,7 +853,7 @@ namespace Jellyfin.Server.Implementations.Users
                 var dbContext = await _dbProvider.CreateDbContextAsync().ConfigureAwait(false);
                 await using (dbContext.ConfigureAwait(false))
                 {
-                    user = UserQuery(dbContext)
+                    user = await UserQuery(dbContext)
                         .AsTracking()
                         .FirstOrDefaultAsync(u => u.Id.Equals(userId))
                         .ConfigureAwait(false)
