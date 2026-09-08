@@ -484,13 +484,7 @@ public class ItemCountService : IItemCountService
         var includeVirtual = user is null || user.DisplayMissingEpisodes;
 
         var accessibleItems = dbContext.BaseItems.AsNoTracking();
-        if (user is null)
-        {
-            // Access filtering is what would otherwise drop an alternate version, and a child count
-            // must not report a title twice just because no user was passed in.
-            accessibleItems = accessibleItems.Where(DescendantQueryHelper.IsDistinctLibraryItem);
-        }
-        else
+        if (user is not null)
         {
             accessibleItems = _queryHelpers.ApplyAccessFiltering(dbContext, accessibleItems, new InternalItemsQuery(user));
         }
