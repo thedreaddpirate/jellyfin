@@ -173,7 +173,7 @@ namespace MediaBrowser.Controller.Entities.Movies
             var libraryFolderIds = LibraryFolderIds;
             if (libraryFolderIds is null)
             {
-                linkedItems = GetLinkedChildren(DtoOptions.StoredColumnsOnly);
+                linkedItems = GetLinkedChildren();
                 libraryFolderIds = GetLibraryFolderIds(linkedItems);
             }
 
@@ -192,7 +192,7 @@ namespace MediaBrowser.Controller.Entities.Movies
             // If user has parental controls, hide the BoxSet when all children are restricted
             if (user.MaxParentalRatingScore.HasValue)
             {
-                linkedItems ??= GetLinkedChildren(DtoOptions.StoredColumnsOnly);
+                linkedItems ??= GetLinkedChildren();
                 if (linkedItems.Count > 0 && linkedItems.All(child => !child.IsParentalAllowed(user, true)))
                 {
                     return false;
@@ -249,7 +249,7 @@ namespace MediaBrowser.Controller.Entities.Movies
 
         public Guid[] GetLibraryFolderIds()
         {
-            return GetLibraryFolderIds(GetLinkedChildren(DtoOptions.StoredColumnsOnly));
+            return GetLibraryFolderIds(GetLinkedChildren());
         }
 
         private Guid[] GetLibraryFolderIds(IEnumerable<BaseItem> linkedChildren)
