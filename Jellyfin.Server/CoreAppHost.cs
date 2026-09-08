@@ -66,7 +66,8 @@ namespace Jellyfin.Server
         protected override void RegisterServices(IServiceCollection serviceCollection)
         {
             // Register an image encoder
-            serviceCollection.AddSingleton(typeof(IImageEncoder), SelectImageEncoder());
+            var (encoderType, pairWithSkia) = SelectImageEncoder();
+            serviceCollection.AddSingleton<IImageEncoder>(provider => CreateImageEncoder(provider, encoderType, pairWithSkia));
 
             serviceCollection.AddEventServices();
             serviceCollection.AddSingleton<IBaseItemManager, BaseItemManager>();
@@ -111,15 +112,18 @@ namespace Jellyfin.Server
         /// A missing native library is not fatal: the server falls back to the next usable encoder and
         /// logs why, so a bad configuration cannot leave it unable to start.
         /// </remarks>
-        /// <returns>The <see cref="IImageEncoder"/> implementation to use.</returns>
-        private Type SelectImageEncoder()
+        /// <returns>
+        /// The <see cref="IImageEncoder"/> implementation to use, and whether it should be paired with
+        /// <see cref="SkiaEncoder"/> for the inputs it cannot read.
+        /// </returns>
+        private (Type Encoder, bool PairWithSkia) SelectImageEncoder()
         {
             if (ConfigurationManager.Configuration.ImageEncoder == ImageEncoderType.NetVips)
             {
                 var netVipsEncoderType = TryGetNetVipsEncoder();
                 if (netVipsEncoderType is not null)
                 {
-                    return netVipsEncoderType;
+                    return (netVipsEncoderType, SkiaEncoder.IsNativeLibAvailable());
                 }
 
                 Logger.LogWarning("libvips not available. Will fallback to {ImageEncoder}.", nameof(SkiaEncoder));
@@ -127,11 +131,25 @@ namespace Jellyfin.Server
 
             if (SkiaEncoder.IsNativeLibAvailable())
             {
-                return typeof(SkiaEncoder);
+                return (typeof(SkiaEncoder), false);
             }
 
             Logger.LogWarning("Skia not available. Will fallback to {ImageEncoder}.", nameof(NullImageEncoder));
-            return typeof(NullImageEncoder);
+            return (typeof(NullImageEncoder), false);
+        }
+
+        private IImageEncoder CreateImageEncoder(IServiceProvider provider, Type encoderType, bool pairWithSkia)
+        {
+            var primary = (IImageEncoder)ActivatorUtilities.CreateInstance(provider, encoderType);
+            if (!pairWithSkia)
+            {
+                return primary;
+            }
+
+            var encoder = new FallbackImageEncoder(primary, ActivatorUtilities.CreateInstance<SkiaEncoder>(provider));
+            Logger.LogInformation("Using the {ImageEncoder} image encoder.", encoder.Name);
+
+            return encoder;
         }
 
         /// <summary>

@@ -33,8 +33,13 @@ public sealed class ImageProcessor : IImageProcessor, IDisposable
     // Increment this when there's a change requiring caches to be invalidated
     private const char Version = '4';
 
+    // AVIF, HEIC, HEIF and TIFF all carry an alpha channel, so they belong here for the same reason
+    // PNG does: the output format has to be one that can keep it.
     private static readonly HashSet<string> _transparentImageTypes
-        = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".png", ".webp", ".gif", ".svg" };
+        = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ".png", ".webp", ".gif", ".svg", ".avif", ".heic", ".heif", ".tif", ".tiff"
+        };
 
     private readonly ILogger<ImageProcessor> _logger;
     private readonly IFileSystem _fileSystem;
@@ -77,35 +82,7 @@ public sealed class ImageProcessor : IImageProcessor, IDisposable
     private string ResizedImageCachePath => Path.Combine(_appPaths.ImageCachePath, "resized-images");
 
     /// <inheritdoc />
-    public IReadOnlyCollection<string> SupportedInputFormats =>
-        new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-        {
-            "tiff",
-            "tif",
-            "jpeg",
-            "jpg",
-            "png",
-            "cr2",
-            "crw",
-            "nef",
-            "orf",
-            "pef",
-            "arw",
-            "webp",
-            "gif",
-            "bmp",
-            "erf",
-            "raf",
-            "rw2",
-            "nrw",
-            "dng",
-            "ico",
-            "astc",
-            "ktx",
-            "pkm",
-            "wbmp",
-            "avif"
-        };
+    public IReadOnlyCollection<string> SupportedInputFormats => _imageEncoder.SupportedInputFormats;
 
     /// <inheritdoc />
     public bool SupportsImageCollageCreation => _imageEncoder.SupportsImageCollageCreation;

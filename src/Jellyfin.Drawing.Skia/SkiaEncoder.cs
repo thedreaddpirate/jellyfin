@@ -71,28 +71,35 @@ public class SkiaEncoder : IImageEncoder
     /// <inheritdoc/>
     public bool SupportsImageEncoding => true;
 
-    /// <inheritdoc/>
+    /// <summary>
+    /// Gets the formats SkiaSharp's bundled codecs can read.
+    /// </summary>
     public IReadOnlyCollection<string> SupportedInputFormats =>
         new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
             "jpeg",
             "jpg",
             "png",
-            "dng",
             "webp",
             "gif",
             "bmp",
             "ico",
-            "astc",
-            "ktx",
-            "pkm",
             "wbmp",
-            // TODO: check if these are supported on multiple platforms
-            // https://github.com/google/skia/blob/master/infra/bots/recipes/test.py#L454
-            // working on windows at least
-            "cr2",
-            "nef",
             "arw",
+            "cr2",
+            "crw",
+            "dcr",
+            "dng",
+            "kdc",
+            "mrw",
+            "nef",
+            "nrw",
+            "orf",
+            "pef",
+            "raf",
+            "rw2",
+            "srw",
+            "x3f",
             SvgFormat
         };
 

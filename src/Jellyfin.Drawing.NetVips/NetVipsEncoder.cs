@@ -560,12 +560,8 @@ public class NetVipsEncoder : IImageEncoder
 
         // Formats SkiaSharp cannot read at all.
         AddIf("heifload", "heic", "heif", "avif");
-        AddIf("jxlload", "jxl");
         AddIf("svgload", "svg");
 
-        // BMP and ICO only exist behind the ImageMagick fallback, which the prebuilt NetVips.Native
-        // binaries do not ship. Losing them is the one input regression against SkiaSharp.
-        AddIf("magickload", "bmp", "ico");
 
         return formats;
     }
