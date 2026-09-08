@@ -85,7 +85,14 @@ public sealed class SqliteDatabaseProvider : IJellyfinDatabaseProvider
         _tempStoreMode = GetOption(customOptions, "tempstoremode", int.Parse, () => 2);
 
         var dataSourceDirectory = Path.GetDirectoryName(dataSource);
-        if (!OperatingSystem.IsWindows() && Directory.Exists(dataSourceDirectory))
+        var configuredTempDirectory = Environment.GetEnvironmentVariable("SQLITE_TMPDIR");
+        if (!string.IsNullOrEmpty(configuredTempDirectory))
+        {
+            // Somebody pointed this somewhere on purpose, so leave it alone. Logged because it decides where the
+            // VACUUM copy lands, which is the first thing to check when that runs out of space.
+            _logger.LogInformation("SQLITE_TMPDIR is already set to {TempDirectory}, leaving it unchanged", configuredTempDirectory);
+        }
+        else if (!OperatingSystem.IsWindows() && Directory.Exists(dataSourceDirectory))
         {
             Environment.SetEnvironmentVariable("SQLITE_TMPDIR", dataSourceDirectory);
             _logger.LogInformation("SQLITE_TMPDIR set to: {TempDirectory}", dataSourceDirectory);
@@ -252,9 +259,6 @@ public sealed class SqliteDatabaseProvider : IJellyfinDatabaseProvider
         }
 
         File.Copy(backupFile, path, true);
-
-        File.Delete(path + "-wal");
-        File.Delete(path + "-shm");
 
         return Task.CompletedTask;
     }
