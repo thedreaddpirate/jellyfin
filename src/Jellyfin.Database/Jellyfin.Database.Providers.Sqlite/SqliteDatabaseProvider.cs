@@ -138,6 +138,12 @@ public sealed class SqliteDatabaseProvider : IJellyfinDatabaseProvider
     public async Task RunShutdownTask(CancellationToken cancellationToken)
     {
         // Run before disposing the application. Only a checkpoint: stopping is on a deadline.
+
+        // Empty the pool first. Anything still parked in it can start reading again between here and the
+        // checkpoint, and a reader that holds the write-ahead log open is exactly what makes the truncation
+        // fail. Connections handed out already cannot be taken away, but they get disposed on return.
+        SqliteConnection.ClearAllPools();
+
         try
         {
             if (DbContextFactory is not null)
