@@ -76,17 +76,16 @@ public class ItemPersistenceService : IItemPersistenceService
                 .Where(e => e.OwnerId.HasValue)
                 .WhereOneOrMany(frontier, e => e.OwnerId!.Value)
                 .Select(e => e.Id)
-                .ToArray();
-
-            var childIds = context.BaseItems
-                .Where(e => e.ParentId.HasValue)
-                .WhereOneOrMany(frontier, e => e.ParentId!.Value)
-                .Select(e => e.Id)
+                .Concat(context.BaseItems
+                    .Where(e => e.ParentId.HasValue)
+                    .WhereOneOrMany(frontier, e => e.ParentId!.Value)
+                    .Select(e => e.Id))
+                .Distinct()
                 .ToArray();
 
             // Only ids that were not already known become the next frontier, so ownership cycles
             // terminate instead of looping forever.
-            frontier = [.. ownedIds.Concat(childIds).Where(e => descendantIds.Add(e))];
+            frontier = [.. ownedIds.Where(e => descendantIds.Add(e))];
         }
 
         var relatedItems = descendantIds.ToArray();
