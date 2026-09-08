@@ -923,13 +923,7 @@ namespace MediaBrowser.MediaEncoding.Encoder
             }
 
             // Force the video stream, otherwise ffmpeg may pick a cover image.
-            var streamIndex = EncodingHelper.FindIndex(mediaSource.MediaStreams, imageStream);
-            if (streamIndex < 0)
-            {
-                throw new InvalidOperationException($"Unable to locate requested stream {imageStream.Title}");
-            }
-
-            inputArg += " -map 0:" + streamIndex;
+            inputArg += " -map 0:" + imageStream.Index.ToString(CultureInfo.InvariantCulture);
 
             var filterParam = encodingHelper.GetVideoProcessingFilterParam(jobState, options, vidEncoder).Trim();
             if (string.IsNullOrWhiteSpace(filterParam))
