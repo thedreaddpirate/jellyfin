@@ -484,7 +484,13 @@ public class ItemCountService : IItemCountService
         var includeVirtual = user is null || user.DisplayMissingEpisodes;
 
         var accessibleItems = dbContext.BaseItems.AsNoTracking();
-        if (user is not null)
+        if (user is null)
+        {
+            // Access filtering is what would otherwise drop an alternate version, and a child count
+            // must not report a title twice just because no user was passed in.
+            accessibleItems = accessibleItems.Where(DescendantQueryHelper.IsDistinctLibraryItem);
+        }
+        else
         {
             accessibleItems = _queryHelpers.ApplyAccessFiltering(dbContext, accessibleItems, new InternalItemsQuery(user));
         }
@@ -610,8 +616,14 @@ public class ItemCountService : IItemCountService
             .Where(DescendantQueryHelper.IsCountableLeaf);
         leafItems = _queryHelpers.ApplyAccessFiltering(dbContext, leafItems, filter);
 
+        // The same predicate the per-item paths use, applied as a filter so the definition of "played"
+        // lives in one place: the flag below is membership of this set rather than a second copy of it.
+        var playedLeafIds = leafItems
+            .Where(DescendantQueryHelper.IsPlayedBy(userId))
+            .Select(b => b.Id);
+
         var playedLeafItems = leafItems
-            .Select(DescendantQueryHelper.PlayedStateBy(userId));
+            .Select(b => new { b.Id, Played = playedLeafIds.Contains(b.Id) });
 
         var ancestorLeaves = dbContext.AncestorIds
             .WhereOneOrMany(folderIdsArray, a => a.ParentItemId)
