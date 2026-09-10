@@ -125,6 +125,19 @@ namespace Emby.Server.Implementations.SyncPlay
         public long MaxPlaybackOffset { get; } = 500;
 
         /// <summary>
+        /// Gets the maximum time, in milliseconds, the group waits for its members to report ready.
+        /// </summary>
+        /// <value>The group-wait timeout.</value>
+        internal long GroupWaitTimeout { get; init; } = DefaultGroupWaitTimeout;
+
+        /// <summary>
+        /// Gets the <see cref="Environment.TickCount64"/> value at which the group gives up waiting
+        /// for its members, or <c>null</c> when it is not waiting for anyone.
+        /// </summary>
+        /// <value>The group-wait deadline.</value>
+        internal long? GroupWaitDeadline { get; private set; }
+
+        /// <summary>
         /// Gets the group identifier.
         /// </summary>
         /// <value>The group identifier.</value>
@@ -166,15 +179,16 @@ namespace Emby.Server.Implementations.SyncPlay
         /// <param name="session">The session.</param>
         private void AddSession(SessionInfo session)
         {
-            _participants.TryAdd(
+            if (_participants.TryAdd(
                 session.Id,
                 new GroupMember(session)
                 {
                     Ping = DefaultPing,
                     IsBuffering = false
-                });
-
-            _participantSessions[session.Id] = session;
+                }))
+            {
+                _participantSessions[session.Id] = session;
+            }
         }
 
         /// <summary>
@@ -724,8 +738,7 @@ namespace Emby.Server.Implementations.SyncPlay
         /// <param name="cancellationToken">The cancellation token.</param>
         internal void HandleGroupWaitTimeout(CancellationToken cancellationToken)
         {
-            var deadline = GroupWaitDeadline;
-            if (deadline is null || deadline > Environment.TickCount64)
+            if (GroupWaitDeadline is null || GroupWaitDeadline > Environment.TickCount64)
             {
                 return;
             }
@@ -737,27 +750,23 @@ namespace Emby.Server.Implementations.SyncPlay
                 return;
             }
 
-            var blockingSessions = _participantSessions
+            var blockingSessions = _participants
                 .Values
-                .Where(participant => _participants.TryGetValue(participant.Id, out var member)
-                    && member.IsBuffering
-                    && !member.IgnoreGroupWait)
+                .Where(member => member.IsBuffering && !member.IgnoreGroupWait)
+                .Select(member => member.SessionId)
                 .ToList();
 
-            if (blockingSessions.Count == 0)
+            if (blockingSessions.Count == 0
+                || !_participantSessions.TryGetValue(blockingSessions[0], out var session))
             {
                 return;
             }
 
-            // The recovery below is broadcast to the whole group, so it does not matter which of
-            // the sessions that kept the group waiting is the one acting on the group's behalf.
-            var session = blockingSessions[0];
-
             _logger.LogWarning(
-                "Group {GroupId} waited {Waited} ms for session(s) {SessionIds} to report ready, giving up.",
+                "Group {GroupId} waited {Timeout} ms for session(s) {SessionIds} to report ready, giving up.",
                 GroupId.ToString(),
-                GroupWaitTimeout + Environment.TickCount64 - deadline.Value,
-                string.Join(", ", blockingSessions.Select(participant => participant.Id)));
+                GroupWaitTimeout,
+                string.Join(", ", blockingSessions));
 
             if (waitingState.ResumePlaying)
             {
