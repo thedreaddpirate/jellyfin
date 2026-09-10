@@ -166,7 +166,7 @@ namespace Jellyfin.LiveTv.Listings
             {
                 File.Delete(tempFile);
             }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            catch (IOException ex)
             {
                 _logger.LogWarning(ex, "Error deleting temporary XMLTV file {File}", tempFile);
             }
