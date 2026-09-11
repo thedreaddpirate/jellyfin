@@ -25,14 +25,6 @@ namespace MediaBrowser.Providers.Plugins.Tmdb
     {
         private const int CacheDurationInHours = 1;
 
-        private static readonly Dictionary<string, string> ThumbnailSizes = new Dictionary<string, string>
-        {
-            { "Primary", "w500" },
-            { "Backdrop", "w780" },
-            { "Thumb", "w780" },
-            { "Logo", "w500" },
-        };
-
         // Sized in TMDb records - see EstimateSize - rather than in responses, because the responses
         // differ in weight by orders of magnitude.
         private const int CacheSizeLimit = 100_000;
