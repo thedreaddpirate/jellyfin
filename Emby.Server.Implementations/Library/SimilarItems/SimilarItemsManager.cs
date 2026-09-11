@@ -656,7 +656,7 @@ public class SimilarItemsManager : ISimilarItemsManager
                 FileMode.Open,
                 FileAccess.Read,
                 FileShare.ReadWrite | FileShare.Delete,
-                IODefaults.FileStreamBufferSize,
+                4096,
                 FileOptions.Asynchronous | FileOptions.SequentialScan);
             await using (stream.ConfigureAwait(false))
             {
