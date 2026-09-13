@@ -422,30 +422,12 @@ namespace Jellyfin.LiveTv.Channels
             var itemId = item.Id.ToString("N", CultureInfo.InvariantCulture);
             var hasDefaultSource = list.Any(i => string.Equals(i.Id, itemId, StringComparison.OrdinalIgnoreCase));
 
-            for (var index = 0; index < list.Count; index++)
+            if (string.IsNullOrEmpty(info.Id))
             {
-                var info = list[index];
-                info.RunTimeTicks ??= item.RunTimeTicks;
-
-                if (!string.IsNullOrEmpty(info.Id))
-                {
-                    continue;
-                }
-
-                if (!hasDefaultSource)
-                {
-                    // The source carrying the item id sorts first and becomes the client's default.
-                    info.Id = itemId;
-                    hasDefaultSource = true;
-                    continue;
-                }
-
-                // Remaining sources need ids that are distinct but stable, as clients send them back to request playback.
-                var key = string.IsNullOrEmpty(info.Path) ? index.ToString(CultureInfo.InvariantCulture) : info.Path;
-                info.Id = (itemId + key).GetMD5().ToString("N", CultureInfo.InvariantCulture);
+                info.Id = item.Id.ToString("N", CultureInfo.InvariantCulture);
             }
 
-            return list;
+            return info;
         }
 
         private async Task<Channel> GetChannel(IChannel channelInfo, CancellationToken cancellationToken)
