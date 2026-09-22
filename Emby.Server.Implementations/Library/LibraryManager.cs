@@ -2544,7 +2544,11 @@ namespace Emby.Server.Implementations.Library
                     // return image.DateModified.Subtract(imageInfo.LastWriteTimeUtc).Duration().TotalSeconds > 1;
                     // return image.DateModified.Subtract(_fileSystem.GetLastWriteTimeUtc(image.Path)).Duration().TotalSeconds > 1;
                     var testVar = image.DateModified.Subtract(_fileSystem.GetLastWriteTimeUtc(image.Path)).Duration().TotalSeconds > 1;
+                    var fileTime = _fileSystem.GetLastWriteTimeUtc(image.Path);
+                    var databaseTime = image.DateModified;
                     _logger.LogInformation("testVar:: {TestVar}", testVar);
+                    _logger.LogInformation("fileTime:: {FileTime}", fileTime);
+                    _logger.LogInformation("databaseTime:: {DatabaseTime}", databaseTime);
                     return testVar;
                 }
                 catch (Exception ex)
