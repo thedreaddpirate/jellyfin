@@ -2536,9 +2536,16 @@ namespace Emby.Server.Implementations.Library
                     return true;
                 }
 
+                // var imageInfo = new FileInfo(image.Path);
+                _logger.LogInformation("Checking if {Image.Path} needs an update", image.Path);
+
                 try
                 {
-                    return image.DateModified.Subtract(_fileSystem.GetLastWriteTimeUtc(image.Path)).Duration().TotalSeconds > 1;
+                    // return image.DateModified.Subtract(imageInfo.LastWriteTimeUtc).Duration().TotalSeconds > 1;
+                    // return image.DateModified.Subtract(_fileSystem.GetLastWriteTimeUtc(image.Path)).Duration().TotalSeconds > 1;
+                    var testVar = image.DateModified.Subtract(_fileSystem.GetLastWriteTimeUtc(image.Path)).Duration().TotalSeconds > 1;
+                    _logger.LogInformation("testVar:: {TestVar}", testVar);
+                    return testVar;
                 }
                 catch (Exception ex)
                 {
