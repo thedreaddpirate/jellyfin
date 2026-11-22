@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Jellyfin.Server.Helpers;
 using MediaBrowser.Common.Configuration;
 using Newtonsoft.Json.Linq;
@@ -14,7 +16,7 @@ namespace Jellyfin.Server.Migrations.Routines
     /// </summary>
 #pragma warning disable CS0618 // Type or member is obsolete
     [JellyfinMigration("2026-11-06T16:00:00", nameof(MigrateLoggingDefault), "E5670d16-5795-49f5-98FF-0EfC5AFFB8A7")]
-    internal class MigrateLoggingDefault : IMigrationRoutine
+    internal class MigrateLoggingDefault : IAsyncMigrationRoutine
 #pragma warning restore CS0618 // Type or member is obsolete
     {
         private readonly IApplicationPaths _appPaths;
@@ -25,7 +27,7 @@ namespace Jellyfin.Server.Migrations.Routines
         }
 
         /// <inheritdoc/>
-        public void Perform()
+        public async Task PerformAsync(CancellationToken cancellationToken)
         {
             var configDirectory = _appPaths.ConfigurationDirectoryPath;
             var existingConfigPath = Path.Combine(configDirectory, "logging.default.json");
@@ -36,7 +38,7 @@ namespace Jellyfin.Server.Migrations.Routines
             if (File.Exists(existingConfigPath) && OldDefaultLogging(existingConfigPath))
             {
                 File.Move(existingConfigPath, Path.Combine(configDirectory, "logging.default.old.json"), overwrite: true);
-                StartupHelpers.InitLoggingConfigFile(_appPaths).ConfigureAwait(false);
+                await StartupHelpers.InitLoggingConfigFile(_appPaths).ConfigureAwait(false);
             }
         }
 
